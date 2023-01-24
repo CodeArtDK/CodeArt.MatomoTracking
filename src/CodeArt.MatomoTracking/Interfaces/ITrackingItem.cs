@@ -6,5 +6,8 @@ namespace CodeArt.MatomoTracking.Interfaces
 {
     public interface ITrackingItem
     {
+        TimeSpan? UserTime { get; }
+
+        Dictionary<int, string> Dimensions { get; }
     }
 }

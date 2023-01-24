@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CodeArt.MatomoTracking.Attributes;
+using CodeArt.MatomoTracking.Interfaces;
+using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
@@ -46,7 +48,7 @@ namespace CodeArt.MatomoTracking
             var url = BuildUri(SetParams);
             var client = new HttpClient();
             Console.WriteLine(url); //Temp
-            var response = await client.GetAsync(url);
+            var response = await client.GetAsync(url); //TODO: Also support POST if GET is too long
             if (!response.IsSuccessStatusCode)
             {
                 //TODO: check response and handle errors
@@ -54,9 +56,54 @@ namespace CodeArt.MatomoTracking
             }
         }
 
+
+        protected void SetParams(NameValueCollection query, ITrackingItem item)
+        {
+            var props = item.GetType().GetProperties();
+            foreach (var prop in props)
+            {
+                var attr = prop.GetCustomAttributes(typeof(QueryParameterAttribute), true).FirstOrDefault() as QueryParameterAttribute;
+                if (attr != null)
+                {
+                    var value = prop.GetValue(item);
+                    if (value != null)
+                    {
+                        if (value is bool)
+                        {
+                            query[attr.Name] = (bool)value ? "1" : "0";
+                        }
+                        else
+                        {
+                            query[attr.Name] = value.ToString();
+                        }
+                    }
+                }
+            }
+            if(item.UserTime!=null && item.UserTime.HasValue)
+            {
+                {
+                    query["h"] = item.UserTime.Value.Hours.ToString();
+                    query["m"] = item.UserTime.Value.Minutes.ToString();
+                    query["s"] = item.UserTime.Value.Seconds.ToString();
+                }
+            }
+            if (item.Dimensions != null && item.Dimensions.Count > 0)
+            {
+                foreach (var dim in item.Dimensions)
+                {
+                    query["dimension" + dim.Key] = dim.Value;
+                }
+            }
+        }
+
+        public async Task Track(ITrackingItem trackingItem)
+        {
+            await Track(query => SetParams(query, trackingItem));
+        }
+
         public string GeneratePageViewId()
         {
-            const string chars = "abcdefghijklmnopqrstuvxyz0123456789";
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
             return new string(Enumerable.Repeat(chars, 6)
                 .Select(s => s[_rand.Next(s.Length)]).ToArray());
         }
