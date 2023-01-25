@@ -1,36 +1,38 @@
 ﻿using CodeArt.MatomoTracking.Attributes;
 using CodeArt.MatomoTracking.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
+
 namespace CodeArt.MatomoTracking
 {
-    public class MatomoTracker
+    public class MatomoTracker : IMatomoTracker
     {
+        private readonly ILogger _logger = null;
         private readonly string _matomoUrl;
         private readonly string _siteId;
         private readonly Random _rand;
-        public MatomoTracker(string MatomoUrl, string SiteId)
+        public MatomoTracker(IServiceProvider services, IOptions<MatomoOptions> options)
         {
-            //validate input is not null
-            if (string.IsNullOrEmpty(MatomoUrl))
-                throw new ArgumentNullException("MatomoUrl");
-            _matomoUrl = MatomoUrl;
-            _siteId = SiteId;
+            _logger = services.GetService<ILogger<MatomoTracker>>();
+            _matomoUrl = options.Value.MatomoUrl;
+            _siteId = options.Value.SiteId;
             _rand = new Random();
         }
+
+
 
         //https://developer.matomo.org/api-reference/tracking-api
 
         private Uri BuildUri(Action<NameValueCollection> SetParams)
         {
-            // /matomo.php
             UriBuilder rt = new UriBuilder(_matomoUrl + (_matomoUrl.EndsWith("/") ? "" : "/") + "matomo.php?idsite=" + _siteId + "&rec=1");
             var query = HttpUtility.ParseQueryString(rt.Query);
             query["idsite"] = _siteId;
@@ -47,12 +49,11 @@ namespace CodeArt.MatomoTracking
         {
             var url = BuildUri(SetParams);
             var client = new HttpClient();
-            Console.WriteLine(url); //Temp
-            var response = await client.GetAsync(url); //TODO: Also support POST if GET is too long
+            _logger?.LogInformation("Tracking url built: " + url.ToString());
+            var response = await client.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
-                //TODO: check response and handle errors
-                Console.WriteLine("Something went wrong: " + response.ReasonPhrase);
+                _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
             }
         }
 
@@ -79,7 +80,7 @@ namespace CodeArt.MatomoTracking
                     }
                 }
             }
-            if(item.UserTime!=null && item.UserTime.HasValue)
+            if (item.UserTime != null && item.UserTime.HasValue)
             {
                 {
                     query["h"] = item.UserTime.Value.Hours.ToString();
