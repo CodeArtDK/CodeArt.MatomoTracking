@@ -10,6 +10,7 @@ namespace CodeArt.MatomoTracking
     {
         public static IServiceCollection AddMatomoTracking(this IServiceCollection services, Action<MatomoOptions>? setupAction = null)
         {
+            services.AddHttpClient<IMatomoTracker, MatomoTracker>();
             services.AddOptions<MatomoOptions>().Configure<IConfiguration>((options, configuration) =>
             {
                 if(setupAction!=null)   setupAction(options);
@@ -19,5 +20,6 @@ namespace CodeArt.MatomoTracking
 
             return services;
         }
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿using CodeArt.MatomoTracking.Attributes;
 using CodeArt.MatomoTracking.Interfaces;
+using CodeArt.MatomoTracking.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -7,6 +8,8 @@ using System;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -19,28 +22,41 @@ namespace CodeArt.MatomoTracking
         private readonly string _matomoUrl;
         private readonly string _siteId;
         private readonly Random _rand;
-        public MatomoTracker(IServiceProvider services, IOptions<MatomoOptions> options)
+        private readonly HttpClient _httpClient;
+        
+        public MatomoTracker(IServiceProvider services, IOptions<MatomoOptions> options, HttpClient httpClient)
         {
             _logger = services.GetService<ILogger<MatomoTracker>>();
+            _httpClient = httpClient;
             _matomoUrl = options.Value.MatomoUrl;
+            if(!_matomoUrl.EndsWith("matomo.php", StringComparison.InvariantCultureIgnoreCase))
+            {
+                _matomoUrl = _matomoUrl.TrimEnd('/') + "/matomo.php";
+            }
             _siteId = options.Value.SiteId;
             _rand = new Random();
         }
 
 
-
         //https://developer.matomo.org/api-reference/tracking-api
+        
 
-        private Uri BuildUri(Action<NameValueCollection> SetParams)
+        private string CreateQueryString(NameValueCollection query,Action<NameValueCollection> SetParams)
         {
-            UriBuilder rt = new UriBuilder(_matomoUrl + (_matomoUrl.EndsWith("/") ? "" : "/") + "matomo.php?idsite=" + _siteId + "&rec=1");
-            var query = HttpUtility.ParseQueryString(rt.Query);
             query["idsite"] = _siteId;
             query["rec"] = "1";
             query["rand"] = _rand.Next(100000000).ToString();
             query["apiv"] = "1";
+            //Set additional parameters
             SetParams(query);
-            rt.Query = query.ToString();
+            return query.ToString();
+        }
+
+        private Uri BuildUri(Action<NameValueCollection> SetParams = null)
+        {
+            UriBuilder rt = new UriBuilder(_matomoUrl);
+            if (SetParams != null)
+                rt.Query = CreateQueryString(HttpUtility.ParseQueryString(rt.Query),SetParams);
             return rt.Uri;
         }
 
@@ -48,14 +64,19 @@ namespace CodeArt.MatomoTracking
         public async Task Track(Action<NameValueCollection> SetParams)
         {
             var url = BuildUri(SetParams);
-            var client = new HttpClient();
             _logger?.LogInformation("Tracking url built: " + url.ToString());
-            var response = await client.GetAsync(url);
+            bool usePost = (url.ToString().Length > 2048);
+            var response = (usePost) ? await _httpClient.PostAsync(url, null) : await _httpClient.GetAsync(url);
             if (!response.IsSuccessStatusCode)
             {
                 _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
             }
+            else
+            {
+                _logger?.LogInformation("Tracked successfully");
+            }
         }
+
 
 
         protected void SetParams(NameValueCollection query, ITrackingItem item)
@@ -95,6 +116,11 @@ namespace CodeArt.MatomoTracking
                     query["dimension" + dim.Key] = dim.Value;
                 }
             }
+            if(item is EcommerceTrackingItem)
+            {
+                var arr=(item as EcommerceTrackingItem).Items.Select(itm => new object[] { itm.SKU, itm.Name, itm.Category, itm.Price, itm.Quantity }).ToList();
+                query["ec_items"] = JsonSerializer.Serialize(arr);
+            }
         }
 
         public async Task Track(ITrackingItem trackingItem)
@@ -102,11 +128,52 @@ namespace CodeArt.MatomoTracking
             await Track(query => SetParams(query, trackingItem));
         }
 
-        public string GeneratePageViewId()
+        /// <summary>
+        /// Bulk track multiple tracking requests in a single payload
+        /// </summary>
+        /// <param name="trackingItems">Items to be tracked</param>
+        /// <returns>The async task to be executed</returns>
+        public async Task Track(params ITrackingItem[] trackingItems)
+        {
+            var url = BuildUri();
+
+            var payload = new
+            {
+                requests = trackingItems.Select(item =>
+                {
+                    var query = HttpUtility.ParseQueryString(string.Empty);
+                    return "?" + CreateQueryString(query,q => SetParams(q, item));
+                }).ToArray()
+            };
+
+            _logger?.LogInformation("Tracking url for bulk tracking built: " + url.ToString());
+            _logger?.LogInformation("Bulk tracking payload: " + JsonSerializer.Serialize(payload));
+            var response = await _httpClient.PostAsync(url, new StringContent(JsonSerializer.Serialize(payload)));
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
+            } else
+            {
+                _logger?.LogInformation("Tracked successfully");
+            }
+        }
+
+
+        private string GenerateID(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-            return new string(Enumerable.Repeat(chars, 6)
+            return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[_rand.Next(s.Length)]).ToArray());
+        }
+        
+        public string GeneratePageViewId()
+        {
+            return GenerateID(6);
+        }
+
+        public string GenerateVisitorID()
+        {
+            return GenerateID(16);
         }
     }
 }
