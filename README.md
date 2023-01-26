@@ -1,5 +1,5 @@
 
-[Nuget](https://img.shields.io/nuget/vpre/CodeArt.MatomoTracking)
+![Nuget](https://img.shields.io/nuget/vpre/CodeArt.MatomoTracking)
 
 
 # CodeArt.MatomoTracking
