@@ -4,8 +4,8 @@
 
 # CodeArt.MatomoTracking
 Opensource Matomo Tracking API for .NET. 
-This library is based on the official Matomo Tracking API documentation: https://developer.matomo.org/api-reference/tracking-api and wraps the API calls in a simple to use .NET library.
-Initial version made by Allan Thraen for (CodeArt)[https://www.codeart.dk/].
+This library is based on the official Matomo Tracking API documentation: [https://developer.matomo.org/api-reference/tracking-api](https://developer.matomo.org/api-reference/tracking-api) and wraps the API calls in a simple to use .NET library.
+Initial version made by Allan Thraen for [CodeArt](https://www.codeart.dk/).
 
 ## Installation
 Register the Matomo Tracking as a service in Dependency Injection. 
