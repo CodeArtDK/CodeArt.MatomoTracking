@@ -1,5 +1,5 @@
 
-![Nuget](https://img.shields.io/nuget/vpre/CodeArt.MatomoTracking)
+[Nuget](https://img.shields.io/nuget/vpre/CodeArt.MatomoTracking)
 
 
 # CodeArt.MatomoTracking
@@ -13,7 +13,7 @@ Register the Matomo Tracking as a service in Dependency Injection.
 ```csharp
         var services = new ServiceCollection();
         
-		//Needs IConfiguration - but this might already be registered in your project
+        //Needs IConfiguration - but this might already be registered in your project
         services.AddScoped<IConfiguration>(_ => configuration);
 		
         services.AddMatomoTracking(options =>
@@ -63,7 +63,7 @@ For the official documentation of what to track - and when, refer to the (offici
 You can also track multiple items in the same call like this:
 
 ```csharp
-	await tracker.Track(new PageViewTrackingItem()
+    await tracker.Track(new PageViewTrackingItem()
     {
         Url = "app://myapp/page1",
         UserID = "test@test.com",
