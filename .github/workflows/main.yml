@@ -46,7 +46,7 @@ jobs:
       run: dotnet build $SOLUTION --configuration $BUILD_CONFIG -p:Version=$BUILD_VERSION --no-restore
 
     - name: Run tests
-      run: dotnet test $SOLUTION --no-restore --no-build --verbosity normal
+      run: dotnet test $SOLUTION /p:Configuration=Release /p:Platform="Any CPU"
 
     - name: Publish
       if: startsWith(github.ref, 'refs/heads/release')
