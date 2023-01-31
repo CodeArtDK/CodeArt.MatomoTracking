@@ -8,15 +8,17 @@ namespace CodeArt.MatomoTracking
 {
     public static class ServiceCollectionExtensions
     {
-        public static IServiceCollection AddMatomoTracking(this IServiceCollection services, Action<MatomoOptions>? setupAction = null)
+        public static IServiceCollection AddMatomo(this IServiceCollection services, Action<MatomoOptions>? setupAction = null)
         {
             services.AddHttpClient<IMatomoTracker, MatomoTracker>();
+            services.AddHttpClient<IMatomoReporting, MatomoReporting>();
             services.AddOptions<MatomoOptions>().Configure<IConfiguration>((options, configuration) =>
             {
                 if(setupAction!=null)   setupAction(options);
                 configuration.GetSection("MatomoTracking").Bind(options);
             });
             services.AddSingleton<IMatomoTracker,MatomoTracker>();
+            services.AddSingleton<IMatomoReporting, MatomoReporting>();
 
             return services;
         }

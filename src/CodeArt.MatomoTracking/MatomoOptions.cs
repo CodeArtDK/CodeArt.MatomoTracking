@@ -19,7 +19,10 @@ namespace CodeArt.MatomoTracking
         /// The site ID on the matomo server
         /// </summary>
         public string SiteId { get; set; }
-        
-        
+
+
+        public string AuthToken { get; set; }
+
+
     }
 }
