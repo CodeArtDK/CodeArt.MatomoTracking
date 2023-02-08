@@ -12,7 +12,7 @@ namespace CodeArt.MatomoTracking
         /// <summary>
         /// The url to the Matomo server
         /// </summary>
-        public string MatomoUrl { get; set; }
+        public string MatomoHostname { get; set; }
 
 
         /// <summary>

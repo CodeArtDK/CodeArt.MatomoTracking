@@ -18,7 +18,7 @@ Register the Matomo Tracking as a service in Dependency Injection.
 		
         services.AddMatomoTracking(options =>
         {
-            options.MatomoUrl = "https://[My matomo url]/";
+            options.MatomoUrl = "https://[My matomo hostname]/";
             options.SiteId = "[My site id]";
         });
         var serviceProvider = services.BuildServiceProvider();
@@ -30,7 +30,7 @@ If you have a configuration file, you can also set the configuration directly th
 ```json
 {
   "Matomo": {
-	"MatomoUrl": "https://[My matomo url]/",
+	"MatomoHostname": "[My matomo hostname]",
 	"SiteId": "[My site id]"
   }
 }

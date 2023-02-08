@@ -28,7 +28,11 @@ namespace CodeArt.MatomoTracking
         {
             _logger = services.GetService<ILogger<MatomoTracker>>();
             _httpClient = httpClient;
-            _matomoUrl = options.Value.MatomoUrl;
+            _matomoUrl = options.Value.MatomoHostname;
+            if (!_matomoUrl.StartsWith("https://"))
+            {
+                _matomoUrl = "https://" + _matomoUrl;
+            }
             if(!_matomoUrl.EndsWith("matomo.php", StringComparison.InvariantCultureIgnoreCase))
             {
                 _matomoUrl = _matomoUrl.TrimEnd('/') + "/matomo.php";

@@ -14,7 +14,7 @@ namespace CodeArt.MatomoTracking
             services.AddOptions<MatomoOptions>().Configure<IConfiguration>((options, configuration) =>
             {
                 if(setupAction!=null)   setupAction(options);
-                configuration.GetSection("MatomoTracking").Bind(options);
+                configuration.GetSection("Matomo").Bind(options);
             });
             services.AddSingleton<IMatomoTracker,MatomoTracker>();
 
