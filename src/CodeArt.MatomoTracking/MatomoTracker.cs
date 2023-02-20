@@ -70,14 +70,20 @@ namespace CodeArt.MatomoTracking
             var url = BuildUri(SetParams);
             _logger?.LogInformation("Tracking url built: " + url.ToString());
             bool usePost = (url.ToString().Length > 2048);
-            var response = (usePost) ? await _httpClient.PostAsync(url, null) : await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
-            }
-            else
+                var response = (usePost) ? await _httpClient.PostAsync(url, null) : await _httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
+                }
+                else
+                {
+                    _logger?.LogInformation("Tracked successfully");
+                }
+            } catch (Exception exc)
             {
-                _logger?.LogInformation("Tracked successfully");
+                _logger?.LogError(exc,$"An error, {exc.Message}, occurred while sending the tracking information to the Matomo server at this url: {url}");
             }
         }
 
