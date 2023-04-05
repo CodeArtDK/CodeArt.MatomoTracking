@@ -40,11 +40,18 @@ namespace CodeArt.MatomoTracking
             _siteId = options.Value.SiteId;
         }
 
+        //Segmentation
+        //https://developer.matomo.org/api-reference/reporting-api
+
         private string CreateQueryString(NameValueCollection query, Action<NameValueCollection> SetParams)
         {
             query["module"] = "API";
             query["idSite"] = _siteId;
             query["format"] = "json";
+            if (_authToken != null)
+            {
+                query["token_auth"] = _authToken;
+            }
             //Set additional parameters
             SetParams(query);
             return query.ToString();
@@ -57,6 +64,9 @@ namespace CodeArt.MatomoTracking
                 rt.Query = CreateQueryString(HttpUtility.ParseQueryString(rt.Query), SetParams);
             return rt.Uri;
         }
+
+        
+        
 
 
     }
