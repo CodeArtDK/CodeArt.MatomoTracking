@@ -28,7 +28,8 @@ namespace CodeArt.MatomoTracking.Tests
             options.SetupGet(x => x.Value).Returns(new MatomoOptions()
             {
                 MatomoHostname = "localhost",
-                SiteId = "1"
+                SiteId = "1",
+                AuthToken = "secrettoken"
             });
             var services = new Mock<IServiceProvider>();
             mockHttp = new MockHttpMessageHandler();
@@ -150,6 +151,35 @@ namespace CodeArt.MatomoTracking.Tests
 
 
             mockHttp.VerifyNoOutstandingExpectation();
+        }
+
+        [TestMethod()]
+        public void TrackTest3()
+        {
+
+
+            mockHttp.Expect("https://localhost/matomo.php")
+                .WithQueryString("action_name", "Test")
+                .WithQueryString("idsite", "1")
+                .WithQueryString("rec", "1")
+                .WithQueryString("url", "https://localhost/abc")
+                .WithQueryString("token_auth", "secrettoken")
+                .WithQueryString("cip", "127.0.0.1")
+                .WithQueryString("cdt", "1577873130")
+                .WithQueryString("lat", "12.121212")
+                .Respond("text/plain", "mocked API response");
+
+            matomoTracker.Track(new PageViewTrackingItem()
+            {
+                ActionName = "Test",
+                Url = "https://localhost/abc",
+                OverrideDateTime = new DateTime(2020,1,1,10,05,30,DateTimeKind.Utc),
+                OverrideVisitorIP = "127.0.0.1",
+                OverrideLat = (decimal) 12.121212
+            }).Wait();
+
+            mockHttp.VerifyNoOutstandingExpectation();
+
         }
 
         [TestMethod()]

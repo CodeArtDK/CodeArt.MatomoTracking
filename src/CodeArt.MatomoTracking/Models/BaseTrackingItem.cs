@@ -167,5 +167,49 @@ namespace CodeArt.MatomoTracking.Models
         /// </summary>
         [QueryParameter("ca")]
         public bool CustomAction { get; set; }//ca
+
+        //-----------------------------------Other parameters (requires authentication) -----------------------------------------------
+
+        /// <summary>
+        /// If set, overrides value for the visitor IP (both IPv4 and IPv6 notations supported). Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("cip")]
+        public string OverrideVisitorIP { get; set; }//cip
+
+        /// <summary>
+        /// Override for the datetime of the request(normally the current time is used). Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("cdt")]
+        public DateTime? OverrideDateTime{ get; set; }
+
+        /// <summary>
+        /// Override value for the country. Should be set to the two letter country code of the visitor (lowercase). Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("country")]
+        public string OverrideCountry { get; set; }
+
+        /// <summary>
+        /// Override value for the region. Should be set to a ISO 3166-2 region code. Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("region")]
+        public string OverrideRegion { get; set; }
+
+        /// <summary>
+        /// An override value for the city the visitor is located in. Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("city")]
+        public string OverrideCity { get; set; }
+
+        /// <summary>
+        /// An override value for the visitors latitude. Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("lat")]
+        public decimal? OverrideLat { get; set; }
+
+        /// <summary>
+        /// An override value for the visitors longitude. Requires the AuthToken to be set in the options.
+        /// </summary>
+        [QueryParameter("long")]
+        public decimal? OverrideLong { get; set; }
     }
 }

@@ -20,6 +20,9 @@ Register the Matomo Tracking as a service in Dependency Injection.
         {
             options.MatomoUrl = "https://[My matomo hostname]/";
             options.SiteId = "[My site id]";
+            options.AuthToken ="[My auth token]"; //Optional
+            options.TrackBots = true; //Optional
+            options.VerboseLogging = true; //Optional - logs the URLs tracked.
         });
         var serviceProvider = services.BuildServiceProvider();
 ```
