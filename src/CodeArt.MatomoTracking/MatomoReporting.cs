@@ -22,7 +22,7 @@ namespace CodeArt.MatomoTracking
         {
             _logger = services.GetService<ILogger<MatomoReporting>>();
             _httpClient = httpClient;
-            _matomoUrl = options.Value.MatomoUrl;
+            _matomoUrl = options.Value.MatomoHostname;
             _authToken = options.Value.AuthToken;
             if (_matomoUrl.EndsWith("matomo.php", StringComparison.InvariantCultureIgnoreCase))
             {
