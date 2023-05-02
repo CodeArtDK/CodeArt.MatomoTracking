@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -21,6 +22,9 @@ namespace CodeArt.MatomoTracking
         private readonly ILogger _logger = null;
         private readonly string _matomoUrl;
         private readonly string _siteId;
+        private readonly string _authToken;
+        private readonly bool _verbose;
+        private readonly bool _trackBots;
         private readonly Random _rand;
         private readonly HttpClient _httpClient;
         
@@ -28,12 +32,19 @@ namespace CodeArt.MatomoTracking
         {
             _logger = services.GetService<ILogger<MatomoTracker>>();
             _httpClient = httpClient;
-            _matomoUrl = options.Value.MatomoUrl;
+            _matomoUrl = options.Value.MatomoHostname;
+            if (!_matomoUrl.StartsWith("https://"))
+            {
+                _matomoUrl = "https://" + _matomoUrl;
+            }
             if(!_matomoUrl.EndsWith("matomo.php", StringComparison.InvariantCultureIgnoreCase))
             {
                 _matomoUrl = _matomoUrl.TrimEnd('/') + "/matomo.php";
             }
             _siteId = options.Value.SiteId;
+            _authToken = options.Value.AuthToken;
+            _verbose = options.Value.VerboseLogging;
+            _trackBots = options.Value.TrackBots;
             _rand = new Random();
         }
 
@@ -47,6 +58,14 @@ namespace CodeArt.MatomoTracking
             query["rec"] = "1";
             query["rand"] = _rand.Next(100000000).ToString();
             query["apiv"] = "1";
+            if (_trackBots)
+            {
+                query["bots"] = "1";
+            }
+            if (!string.IsNullOrEmpty(_authToken))
+            {
+                query["token_auth"] = _authToken;
+            }
             //Set additional parameters
             SetParams(query);
             return query.ToString();
@@ -64,16 +83,35 @@ namespace CodeArt.MatomoTracking
         public async Task Track(Action<NameValueCollection> SetParams)
         {
             var url = BuildUri(SetParams);
-            _logger?.LogInformation("Tracking url built: " + url.ToString());
-            bool usePost = (url.ToString().Length > 2048);
-            var response = (usePost) ? await _httpClient.PostAsync(url, null) : await _httpClient.GetAsync(url);
-            if (!response.IsSuccessStatusCode)
+            if (_verbose)
             {
-                _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
+                _logger?.LogInformation("Tracking url built: " + url.ToString());
             }
-            else
+            bool usePost = (url.ToString().Length > 2048);
+            try
             {
-                _logger?.LogInformation("Tracked successfully");
+                var response = (usePost) ? await _httpClient.PostAsync(url, null) : await _httpClient.GetAsync(url);
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger?.LogError($"Matomo tracking failed: Status code: {response.StatusCode} and reason: {response.ReasonPhrase}");
+                }
+                else
+                {
+                    if (_verbose)
+                    {
+                        _logger?.LogInformation("Tracked successfully");
+                    }
+                }
+            } catch (Exception exc)
+            {
+                if (_verbose)
+                {
+                    _logger?.LogError(exc, $"An error, {exc.Message}, occurred while sending the tracking information to the Matomo server at this url: {url}");
+                }
+                else {
+                    _logger?.LogError(exc, $"An error, {exc.Message}, occurred while sending the tracking information to the Matomo server.");
+                }
+                
             }
         }
 
@@ -88,11 +126,20 @@ namespace CodeArt.MatomoTracking
                 if (attr != null)
                 {
                     var value = prop.GetValue(item);
-                    if (value != null)
+                    if (value != null && (!prop.Name.StartsWith("Override") || !string.IsNullOrEmpty(_authToken)))
                     {
                         if (value is bool)
                         {
                             query[attr.Name] = (bool)value ? "1" : "0";
+                        }
+                        else if(value is DateTime? && (value as DateTime?).HasValue)
+                        {
+                            DateTimeOffset dto = new DateTimeOffset((value as DateTime?).Value.ToUniversalTime());
+                            query[attr.Name] = dto.ToUnixTimeSeconds().ToString();
+                        } 
+                        else if(value is decimal? && (value as Decimal?).HasValue)
+                        {
+                            query[attr.Name] = (value as Decimal?).Value.ToString(CultureInfo.InvariantCulture);
                         }
                         else
                         {
