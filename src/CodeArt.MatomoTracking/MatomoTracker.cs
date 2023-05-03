@@ -208,7 +208,7 @@ namespace CodeArt.MatomoTracking
 
         private string GenerateID(int length)
         {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            const string chars = "abcdefghijklmnopqrstuvwxyz0123456789";
             return new string(Enumerable.Repeat(chars, length)
                 .Select(s => s[_rand.Next(s.Length)]).ToArray());
         }
@@ -220,7 +220,9 @@ namespace CodeArt.MatomoTracking
 
         public string GenerateVisitorID()
         {
-            return GenerateID(16);
+            const string chars = "ABCDEF0123456789";
+            return new string(Enumerable.Repeat(chars, 16)
+                .Select(s => s[_rand.Next(s.Length)]).ToArray());
         }
     }
 }
